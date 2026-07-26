@@ -1,0 +1,76 @@
+# Quick Notch
+
+Mac menu-bar / notch capture app: type a quick note in the notch UI, and it saves a Markdown file into a local folder you choose (perfect for an Obsidian vault).
+
+## Download (DMG)
+
+Users download the app from **GitHub Releases** (not from git history — `.dmg` files stay out of the repo).
+
+1. Open the repo **Releases** page
+2. Download `QuickNotch-x.y.z.dmg`
+3. Open the DMG and drag **QuickNotch** into **Applications**
+4. First launch: right-click the app → **Open** (ad-hoc signed builds are blocked by Gatekeeper until you approve once)
+
+### Publish a release
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+The [Build DMG](.github/workflows/build-dmg.yml) workflow runs on `macos-14`, uploads the DMG as a workflow artifact, and attaches it to the GitHub Release for that tag. You can also run the workflow manually from the Actions tab.
+
+### Build a DMG locally
+
+```bash
+./scripts/package-dmg.sh
+# → dist/QuickNotch-1.0.0.dmg
+```
+
+Uses full Xcode when available; otherwise Command Line Tools + `swiftc` (universal `arm64` + `x86_64` by default).
+## Use
+
+1. Launch **Quick Notch** (menu bar icon appears; no Dock icon)
+2. Open **Settings…** from the menu bar icon and choose your notes folder (e.g. an Obsidian vault path)
+3. Capture with any of:
+   - Click the black **Capture** pill under the notch
+   - Menu bar → **Capture Note**
+   - Hotkey **⌘⇧N**
+4. Type your note → **Save** (**⌘↵**) writes a `.md` file into that folder
+5. **Esc** cancels
+
+### File format
+
+Notes look like:
+
+```markdown
+---
+created: 2026-07-26T14:30:00Z
+source: Quick Notch
+---
+
+# First line becomes the title
+
+Remaining lines are the body.
+```
+
+Filename pattern: `yyyy-MM-dd-HHmmss-slug.md`
+
+## Develop
+
+Requires macOS 14+ and Xcode.
+
+```bash
+open QuickNotch.xcodeproj
+```
+
+Or build from the CLI:
+
+```bash
+xcodebuild -project QuickNotch.xcodeproj -scheme QuickNotch -configuration Debug -destination 'platform=macOS' build
+```
+
+## Notes
+
+- Sandbox is off so the app can write to any folder you select (Obsidian vaults, iCloud paths, etc.).
+- DMGs from CI are **ad-hoc signed**. For Gatekeeper-clean installs later, add Apple Developer ID signing + notarization to `scripts/package-dmg.sh` and the workflow.

@@ -1,0 +1,16 @@
+# macOS / Xcode
+build/
+dist/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Local
+.DS_Store
+*.swp
+.env
