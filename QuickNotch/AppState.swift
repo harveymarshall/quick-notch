@@ -14,6 +14,8 @@ final class AppState: ObservableObject {
     @Published var isCaptureVisible: Bool = false
     @Published var statusMessage: String?
     @Published var lastError: String?
+    /// Bumped when the capture field should take keyboard focus.
+    @Published var focusCaptureField: Int = 0
 
     weak var notchController: NotchPanelController?
 
@@ -41,10 +43,11 @@ final class AppState: ObservableObject {
     }
 
     func hideCapture() {
+        // Panel controller clears draft / visibility while collapsing.
+        notchController?.collapse()
         isCaptureVisible = false
         draftText = ""
         statusMessage = nil
-        notchController?.collapse()
     }
 
     func toggleCapture() {

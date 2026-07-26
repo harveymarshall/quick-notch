@@ -20,5 +20,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationWillTerminate(_ notification: Notification) {
         hotKey?.unregister()
+        notchController?.stopMouseMonitoring()
     }
 }
