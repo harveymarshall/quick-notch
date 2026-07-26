@@ -32,12 +32,11 @@ Uses full Xcode when available; otherwise Command Line Tools + `swiftc` (univers
 
 1. Launch **Quick Notch** (menu bar icon appears; no Dock icon)
 2. Open **Settings…** from the menu bar icon and choose your notes folder (e.g. an Obsidian vault path)
-3. Capture with any of:
-   - Click the black **Capture** pill under the notch
+3. Capture by moving the cursor up into the **camera notch**, or with:
    - Menu bar → **Capture Note**
    - Hotkey **⌘⇧N**
-4. Type your note → **Save** (**⌘↵**) writes a `.md` file into that folder
-5. **Esc** cancels
+4. Type your note → **Save** (**⌘S**) writes a `.md` file into that folder
+5. **Esc** cancels (or move away if the note is still empty)
 
 ### File format
 

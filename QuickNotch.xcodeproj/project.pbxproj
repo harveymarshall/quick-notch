@@ -11,6 +11,8 @@
 		89605BBCF21D4917BBC3298B /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F5824C749B4B21ABAFEC56 /* AppDelegate.swift */; };
 		D5228C6995F04775B08874C1 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = DB9A6AEA53E149FB8D8BCA35 /* AppState.swift */; };
 		7DB3F4B9813647F4AAD3F98C /* NotchPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3531D6FC0CD4BEA91215C63 /* NotchPanelController.swift */; };
+		A1B2C3D4E5F60718293A4B5C /* NotchGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C3D4E5F60718293A4B5C6D /* NotchGeometry.swift */; };
+		C3D4E5F60718293A4B5C6D7E /* NotchExpansionShape.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4E5F60718293A4B5C6D7E8F /* NotchExpansionShape.swift */; };
 		4F91FF12E0704C86BCAE6522 /* NotchViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5274CDEA47C467286A20F6E /* NotchViews.swift */; };
 		B780182FCE614BC7828E6858 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C271A5948C374544A99B7495 /* SettingsView.swift */; };
 		6D0365FCFFF14C39BD5E56FC /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B4F3229E74EC4C6AAEFA74B7 /* SettingsStore.swift */; };
@@ -24,6 +26,8 @@
 		99F5824C749B4B21ABAFEC56 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		DB9A6AEA53E149FB8D8BCA35 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		C3531D6FC0CD4BEA91215C63 /* NotchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchPanelController.swift; sourceTree = "<group>"; };
+		B2C3D4E5F60718293A4B5C6D /* NotchGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchGeometry.swift; sourceTree = "<group>"; };
+		D4E5F60718293A4B5C6D7E8F /* NotchExpansionShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchExpansionShape.swift; sourceTree = "<group>"; };
 		F5274CDEA47C467286A20F6E /* NotchViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotchViews.swift; sourceTree = "<group>"; };
 		C271A5948C374544A99B7495 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		B4F3229E74EC4C6AAEFA74B7 /* SettingsStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
@@ -82,6 +86,8 @@
 			isa = PBXGroup;
 			children = (
 				C3531D6FC0CD4BEA91215C63 /* NotchPanelController.swift */,
+				B2C3D4E5F60718293A4B5C6D /* NotchGeometry.swift */,
+				D4E5F60718293A4B5C6D7E8F /* NotchExpansionShape.swift */,
 				F5274CDEA47C467286A20F6E /* NotchViews.swift */,
 			);
 			path = Notch;
@@ -173,6 +179,8 @@
 				89605BBCF21D4917BBC3298B /* AppDelegate.swift in Sources */,
 				D5228C6995F04775B08874C1 /* AppState.swift in Sources */,
 				7DB3F4B9813647F4AAD3F98C /* NotchPanelController.swift in Sources */,
+				A1B2C3D4E5F60718293A4B5C /* NotchGeometry.swift in Sources */,
+				C3D4E5F60718293A4B5C6D7E /* NotchExpansionShape.swift in Sources */,
 				4F91FF12E0704C86BCAE6522 /* NotchViews.swift in Sources */,
 				B780182FCE614BC7828E6858 /* SettingsView.swift in Sources */,
 				6D0365FCFFF14C39BD5E56FC /* SettingsStore.swift in Sources */,

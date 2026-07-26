@@ -62,6 +62,8 @@ build_with_swiftc() {
     QuickNotch/QuickNotchApp.swift
     QuickNotch/AppDelegate.swift
     QuickNotch/AppState.swift
+    QuickNotch/Notch/NotchGeometry.swift
+    QuickNotch/Notch/NotchExpansionShape.swift
     QuickNotch/Notch/NotchPanelController.swift
     QuickNotch/Notch/NotchViews.swift
     QuickNotch/Settings/SettingsView.swift

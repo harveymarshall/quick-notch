@@ -44,9 +44,11 @@ struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("How to capture")
                         .font(.headline)
+                    labeled("Notch", "Move the cursor up into the camera notch to open capture")
                     labeled("Menu bar", "Click the Quick Notch icon → Capture Note")
                     labeled("Hotkey", "⌘⇧N opens the notch capture panel")
-                    labeled("Save", "⌘↵ or the Save button writes a .md file")
+                    labeled("Save", "⌘S or the Save button writes a .md file")
+                    labeled("Dismiss", "Esc, or move the cursor away (if the note is still empty)")
                 }
                 .padding(.vertical, 4)
             }
