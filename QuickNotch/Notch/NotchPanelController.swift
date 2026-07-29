@@ -57,6 +57,15 @@ final class NotchPanelController {
         resizeGeneration += 1
     }
 
+    /// Re-glue the panel to `screen.frame.maxY` (menu-bar / activation-policy
+    /// changes can shove it down into the visible frame).
+    func repinToScreenTop() {
+        guard let panel else { return }
+        let size = (appState.isCaptureVisible || isExpanding) ? expandedSize : collapsedSize
+        position(panel: panel, size: size)
+        panel.orderFrontRegardless()
+    }
+
     /// Same top-pinned expand animation used by notch hover and ⌘⇧N.
     func expand() {
         guard let panel else { return }
