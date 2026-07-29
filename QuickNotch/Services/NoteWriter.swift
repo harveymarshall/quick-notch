@@ -43,7 +43,7 @@ enum NoteWriter {
     }
 
     static func makeFilename(from text: String, date: Date = Date()) -> String {
-        let stamp = Self.timestampFormatter.string(from: date)
+        let stamp = timestampString(from: date)
         let slug = slugify(firstLine(of: text))
         if slug.isEmpty {
             return "\(stamp).md"
@@ -53,7 +53,7 @@ enum NoteWriter {
 
     static func makeMarkdownBody(from text: String, date: Date = Date()) -> String {
         let title = firstLine(of: text)
-        let iso = Self.isoFormatter.string(from: date)
+        let iso = isoString(from: date)
         var lines: [String] = [
             "---",
             "created: \(iso)",
@@ -101,16 +101,16 @@ enum NoteWriter {
         return String(collapsed.prefix(48))
     }
 
-    private static let timestampFormatter: DateFormatter = {
+    private static func timestampString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd-HHmmss"
-        return formatter
-    }()
+        return formatter.string(from: date)
+    }
 
-    private static let isoFormatter: ISO8601DateFormatter = {
+    private static func isoString(from date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        return formatter
-    }()
+        return formatter.string(from: date)
+    }
 }

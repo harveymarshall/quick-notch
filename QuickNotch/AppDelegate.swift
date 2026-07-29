@@ -13,7 +13,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         AppState.shared.notchController = controller
 
         hotKey = GlobalHotKey(keyCode: 0x2D, modifiers: [.command, .shift]) { // Cmd+Shift+N
-            AppState.shared.toggleCapture()
+            Task { @MainActor in
+                AppState.shared.toggleCapture()
+            }
         }
         hotKey?.register()
     }

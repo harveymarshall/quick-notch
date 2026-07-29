@@ -2,8 +2,8 @@ import AppKit
 import Carbon
 
 /// Minimal global hotkey using Carbon RegisterEventHotKey.
-final class GlobalHotKey {
-    struct Modifiers: OptionSet {
+final class GlobalHotKey: @unchecked Sendable {
+    struct Modifiers: OptionSet, Sendable {
         let rawValue: UInt32
         static let command = Modifiers(rawValue: UInt32(cmdKey))
         static let shift = Modifiers(rawValue: UInt32(shiftKey))
@@ -11,21 +11,52 @@ final class GlobalHotKey {
         static let control = Modifiers(rawValue: UInt32(controlKey))
     }
 
+    private final class HandlerStore: @unchecked Sendable {
+        private let lock = NSLock()
+        private var handlers: [UInt32: @Sendable () -> Void] = [:]
+        private var nextID: UInt32 = 1
+
+        func allocateID() -> UInt32 {
+            lock.lock()
+            defer { lock.unlock() }
+            let id = nextID
+            nextID += 1
+            return id
+        }
+
+        func setHandler(_ handler: @escaping @Sendable () -> Void, for id: UInt32) {
+            lock.lock()
+            handlers[id] = handler
+            lock.unlock()
+        }
+
+        func removeHandler(for id: UInt32) {
+            lock.lock()
+            handlers[id] = nil
+            lock.unlock()
+        }
+
+        func handler(for id: UInt32) -> (@Sendable () -> Void)? {
+            lock.lock()
+            defer { lock.unlock() }
+            return handlers[id]
+        }
+    }
+
+    private static let store = HandlerStore()
+
     private let keyCode: UInt32
     private let modifiers: Modifiers
-    private let handler: () -> Void
+    private let handler: @Sendable () -> Void
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
-    private static var handlers: [UInt32: () -> Void] = [:]
-    private static var nextID: UInt32 = 1
     private let hotKeyID: UInt32
 
-    init(keyCode: UInt32, modifiers: Modifiers, handler: @escaping () -> Void) {
+    init(keyCode: UInt32, modifiers: Modifiers, handler: @escaping @Sendable () -> Void) {
         self.keyCode = keyCode
         self.modifiers = modifiers
         self.handler = handler
-        self.hotKeyID = GlobalHotKey.nextID
-        GlobalHotKey.nextID += 1
+        self.hotKeyID = GlobalHotKey.store.allocateID()
     }
 
     func register() {
@@ -43,7 +74,7 @@ final class GlobalHotKey {
                     nil,
                     &hotKeyID
                 )
-                if let handler = GlobalHotKey.handlers[hotKeyID.id] {
+                if let handler = GlobalHotKey.store.handler(for: hotKeyID.id) {
                     DispatchQueue.main.async { handler() }
                 }
                 return noErr
@@ -55,7 +86,7 @@ final class GlobalHotKey {
         )
         guard status == noErr else { return }
 
-        GlobalHotKey.handlers[hotKeyID] = handler
+        GlobalHotKey.store.setHandler(handler, for: hotKeyID)
         var ref: EventHotKeyRef?
         let id = EventHotKeyID(signature: OSType(0x514E5443), id: hotKeyID) // 'QNTC'
         let registerStatus = RegisterEventHotKey(
@@ -78,13 +109,12 @@ final class GlobalHotKey {
         if let eventHandler {
             RemoveEventHandler(eventHandler)
         }
-        GlobalHotKey.handlers[hotKeyID] = nil
+        GlobalHotKey.store.removeHandler(for: hotKeyID)
         hotKeyRef = nil
         eventHandler = nil
     }
 
     deinit {
-        // Best-effort cleanup; Carbon refs are not MainActor-isolated.
         if let hotKeyRef {
             UnregisterEventHotKey(hotKeyRef)
         }
