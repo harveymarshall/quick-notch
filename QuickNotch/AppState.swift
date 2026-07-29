@@ -38,12 +38,11 @@ final class AppState: ObservableObject {
         }
         lastError = nil
         statusMessage = nil
-        isCaptureVisible = true
+        // Let expand() reveal the editor after the same top-pinned animation as hover.
         notchController?.expand()
     }
 
     func hideCapture() {
-        // Panel controller clears draft / visibility while collapsing.
         notchController?.collapse()
         isCaptureVisible = false
         draftText = ""
@@ -59,12 +58,7 @@ final class AppState: ObservableObject {
     }
 
     func openSettings() {
-        NSApp.activate(ignoringOtherApps: true)
-        if #available(macOS 14.0, *) {
-            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-        } else {
-            NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
-        }
+        SettingsWindowController.shared.show()
     }
 
     @discardableResult

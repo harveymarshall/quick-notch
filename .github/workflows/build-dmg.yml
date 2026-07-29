@@ -2,12 +2,21 @@ name: Build DMG
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
   workflow_dispatch:
+    inputs:
+      version:
+        description: "Optional version override (e.g. 1.2.0). Leave empty to auto-bump patch."
+        required: false
+        type: string
 
 permissions:
   contents: write
+
+concurrency:
+  group: release-dmg-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   dmg:
@@ -15,11 +24,53 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
+      - name: Resolve release version
+        id: version
+        run: |
+          set -euo pipefail
+
+          if [[ -n "${{ inputs.version }}" ]]; then
+            VERSION="${{ inputs.version }}"
+            VERSION="${VERSION#v}"
+          else
+            LATEST_TAG="$(git tag -l 'v*' --sort=-v:refname | head -1 || true)"
+            if [[ -z "${LATEST_TAG}" ]]; then
+              VERSION="1.0.0"
+            else
+              BASE="${LATEST_TAG#v}"
+              IFS='.' read -r MAJOR MINOR PATCH <<< "${BASE}"
+              MAJOR="${MAJOR:-1}"
+              MINOR="${MINOR:-0}"
+              PATCH="${PATCH:-0}"
+              # Non-numeric patch (e.g. 1.0.0-beta) → reset patch bump from 0
+              if [[ ! "${PATCH}" =~ ^[0-9]+$ ]]; then
+                PATCH=0
+              fi
+              PATCH=$((PATCH + 1))
+              VERSION="${MAJOR}.${MINOR}.${PATCH}"
+            fi
+          fi
+
+          TAG="v${VERSION}"
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "Tag ${TAG} already exists; aborting to avoid duplicate release."
+            exit 1
+          fi
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Resolved release ${TAG}"
+
       - name: Package DMG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           chmod +x scripts/package-dmg.sh
           scripts/package-dmg.sh
@@ -27,15 +78,18 @@ jobs:
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
-          name: QuickNotch-dmg
+          name: QuickNotch-${{ steps.version.outputs.version }}-dmg
           path: dist/*.dmg
           if-no-files-found: error
 
-      - name: Attach DMG to GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Quick Notch ${{ steps.version.outputs.version }}
           files: dist/*.dmg
           generate_release_notes: true
+          make_latest: true
+          target_commitish: ${{ github.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

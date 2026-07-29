@@ -15,6 +15,11 @@ final class NotchHostingView<Content: View>: NSHostingView<Content> {
     override var safeAreaInsets: NSEdgeInsets { NSEdgeInsets() }
 }
 
+/// Pure easing helper — intentionally nonisolated so Timer callbacks can use it on CI/Swift 6.
+private func notchEaseInOut(_ t: CGFloat) -> CGFloat {
+    t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2
+}
+
 @MainActor
 final class NotchPanelController {
     private let appState: AppState
@@ -24,7 +29,8 @@ final class NotchPanelController {
     private var keyMonitor: Any?
     private var collapseWorkItem: DispatchWorkItem?
     private var focusWorkItem: DispatchWorkItem?
-    private var resizeTimer: Timer?
+    private var resizeGeneration = 0
+    private var isExpanding = false
 
     private var collapsedSize: NSSize
     private let expandedSize = NSSize(width: 560, height: 320)
@@ -48,18 +54,28 @@ final class NotchPanelController {
             self.localMouseMonitor = nil
         }
         removeKeyMonitor()
-        resizeTimer?.invalidate()
-        resizeTimer = nil
+        resizeGeneration += 1
     }
 
+    /// Re-glue the panel to `screen.frame.maxY` (menu-bar / activation-policy
+    /// changes can shove it down into the visible frame).
+    func repinToScreenTop() {
+        guard let panel else { return }
+        let size = (appState.isCaptureVisible || isExpanding) ? expandedSize : collapsedSize
+        position(panel: panel, size: size)
+        panel.orderFrontRegardless()
+    }
+
+    /// Same top-pinned expand animation used by notch hover and ⌘⇧N.
     func expand() {
         guard let panel else { return }
+        if appState.isCaptureVisible || isExpanding { return }
+
         cancelCollapse()
-        resizeTimer?.invalidate()
+        resizeGeneration += 1
+        isExpanding = true
 
         // Grow the window first (top edge locked), then reveal the editor.
-        // Showing CaptureView while still collapsed was clipping the Save button
-        // and stealing/breaking text focus.
         panel.alphaValue = 1
         panel.hasShadow = false
         panel.orderFrontRegardless()
@@ -68,6 +84,7 @@ final class NotchPanelController {
 
         animateTopPinned(panel: panel, to: expandedSize) { [weak self] in
             guard let self, let panel = self.panel else { return }
+            self.isExpanding = false
             self.appState.isCaptureVisible = true
             panel.hasShadow = true
             self.installKeyMonitor()
@@ -79,15 +96,16 @@ final class NotchPanelController {
         guard let panel else { return }
         cancelCollapse()
         focusWorkItem?.cancel()
-        resizeTimer?.invalidate()
+        resizeGeneration += 1
         removeKeyMonitor()
+        isExpanding = false
 
         appState.isCaptureVisible = false
         appState.draftText = ""
         appState.statusMessage = nil
         panel.hasShadow = false
 
-        let finish = { [weak self] in
+        let finish: () -> Void = { [weak self] in
             guard let self, let panel = self.panel else { return }
             self.position(panel: panel, size: self.collapsedSize)
             if panel.isKeyWindow {
@@ -135,22 +153,20 @@ final class NotchPanelController {
     }
 
     private func startMouseMonitoring() {
-        let handler: (NSEvent) -> Void = { [weak self] _ in
+        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: [.mouseMoved, .leftMouseDragged]
+        ) { [weak self] _ in
             Task { @MainActor in
                 self?.handleMouseLocation(NSEvent.mouseLocation)
             }
         }
 
-        globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: [.mouseMoved, .leftMouseDragged]
-        ) { event in
-            handler(event)
-        }
-
         localMouseMonitor = NSEvent.addLocalMonitorForEvents(
             matching: [.mouseMoved, .leftMouseDragged]
-        ) { event in
-            handler(event)
+        ) { [weak self] event in
+            Task { @MainActor in
+                self?.handleMouseLocation(NSEvent.mouseLocation)
+            }
             return event
         }
     }
@@ -158,15 +174,18 @@ final class NotchPanelController {
     private func installKeyMonitor() {
         removeKeyMonitor()
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self else { return event }
             let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
             if flags == .command,
                event.charactersIgnoringModifiers?.lowercased() == "s" {
-                _ = self.appState.saveDraft()
+                Task { @MainActor in
+                    _ = self?.appState.saveDraft()
+                }
                 return nil
             }
             if event.keyCode == 53 { // escape
-                self.appState.hideCapture()
+                Task { @MainActor in
+                    self?.appState.hideCapture()
+                }
                 return nil
             }
             return event
@@ -197,18 +216,16 @@ final class NotchPanelController {
         let hoverZone = NotchGeometry.hoverZone(on: screen)
         let inHoverZone = hoverZone.contains(location)
 
-        if appState.isCaptureVisible {
+        if appState.isCaptureVisible || isExpanding {
             let overPanel = panel?.frame.contains(location) == true
-            if inHoverZone || overPanel || !appState.draftText.isEmpty {
+            if inHoverZone || overPanel || !appState.draftText.isEmpty || isExpanding {
                 cancelCollapse()
             } else {
                 scheduleCollapse()
             }
         } else if inHoverZone {
             guard appState.hasValidNotesFolder else { return }
-            // Don't restart expand mid-animation.
-            guard panel?.frame.size != expandedSize || !appState.isCaptureVisible else { return }
-            guard resizeTimer == nil else { return }
+            guard !isExpanding else { return }
             appState.lastError = nil
             appState.statusMessage = nil
             expand()
@@ -243,6 +260,7 @@ final class NotchPanelController {
     }
 
     /// Resize while keeping the top edge glued to `screen.frame.maxY` on every frame.
+    /// Uses main-queue ticks only so Swift 6 / CI concurrency checks stay clean.
     private func animateTopPinned(panel: NSPanel, to size: NSSize, completion: (() -> Void)? = nil) {
         let screen = NotchGeometry.screenForNotch()
         let topY = screen.frame.maxY
@@ -254,11 +272,14 @@ final class NotchPanelController {
 
         let duration = 0.30
         let startTime = CACurrentMediaTime()
-        resizeTimer?.invalidate()
+        resizeGeneration += 1
+        let generation = resizeGeneration
 
-        resizeTimer = Timer.scheduledTimer(withTimeInterval: 1.0 / 60.0, repeats: true) { [weak self] timer in
+        func tick() {
+            guard generation == resizeGeneration else { return }
+
             let progress = min(1, (CACurrentMediaTime() - startTime) / duration)
-            let e = Self.easeInOut(progress)
+            let e = notchEaseInOut(progress)
             let width = start.width + (end.width - start.width) * e
             let height = start.height + (end.height - start.height) * e
             let midX = start.midX + (end.midX - start.midX) * e
@@ -271,20 +292,15 @@ final class NotchPanelController {
             panel.setFrame(frame, display: true)
 
             if progress >= 1 {
-                timer.invalidate()
-                Task { @MainActor in
-                    self?.resizeTimer = nil
-                    panel.setFrame(end, display: true)
-                    completion?()
+                panel.setFrame(end, display: true)
+                completion?()
+            } else {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60.0) {
+                    tick()
                 }
             }
         }
-        if let resizeTimer {
-            RunLoop.main.add(resizeTimer, forMode: .common)
-        }
-    }
 
-    private static func easeInOut(_ t: CGFloat) -> CGFloat {
-        t < 0.5 ? 2 * t * t : 1 - pow(-2 * t + 2, 2) / 2
+        tick()
     }
 }
