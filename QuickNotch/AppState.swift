@@ -38,12 +38,11 @@ final class AppState: ObservableObject {
         }
         lastError = nil
         statusMessage = nil
-        isCaptureVisible = true
+        // Let expand() reveal the editor after the same top-pinned animation as hover.
         notchController?.expand()
     }
 
     func hideCapture() {
-        // Panel controller clears draft / visibility while collapsing.
         notchController?.collapse()
         isCaptureVisible = false
         draftText = ""

@@ -11,20 +11,24 @@ Users download the app from **GitHub Releases** (not from git history — `.dmg`
 3. Open the DMG and drag **QuickNotch** into **Applications**
 4. First launch: right-click the app → **Open** (ad-hoc signed builds are blocked by Gatekeeper until you approve once)
 
-### Publish a release
+### Automatic releases
 
-```bash
-git tag v1.0.0
-git push origin v1.0.0
-```
+Every merge to `main` runs [Build DMG](.github/workflows/build-dmg.yml), which:
 
-The [Build DMG](.github/workflows/build-dmg.yml) workflow runs on `macos-14`, uploads the DMG as a workflow artifact, and attaches it to the GitHub Release for that tag. You can also run the workflow manually from the Actions tab.
+1. Auto-bumps the patch version from the latest `v*` tag (or starts at `1.0.0`)
+2. Builds a universal DMG
+3. Creates a GitHub Release for that version and attaches the DMG
+
+You can also run the workflow manually from the Actions tab and optionally pass a version override.
 
 ### Build a DMG locally
 
 ```bash
 ./scripts/package-dmg.sh
 # → dist/QuickNotch-1.0.0.dmg
+
+VERSION=1.2.3 ./scripts/package-dmg.sh
+# → dist/QuickNotch-1.2.3.dmg
 ```
 
 Uses full Xcode when available; otherwise Command Line Tools + `swiftc` (universal `arm64` + `x86_64` by default).
