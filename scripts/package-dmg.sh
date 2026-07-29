@@ -8,8 +8,12 @@ cd "$ROOT"
 
 APP_NAME="QuickNotch"
 CONFIGURATION="${CONFIGURATION:-Release}"
-VERSION="$(grep -E 'MARKETING_VERSION' QuickNotch.xcodeproj/project.pbxproj | head -1 | sed -E 's/.*=[[:space:]]*([0-9.]+);/\1/' || true)"
+# Prefer explicit VERSION (CI release workflow), then fall back to Xcode marketing version.
+if [[ -z "${VERSION:-}" ]]; then
+  VERSION="$(grep -E 'MARKETING_VERSION' QuickNotch.xcodeproj/project.pbxproj | head -1 | sed -E 's/.*=[[:space:]]*([0-9.]+);/\1/' || true)"
+fi
 VERSION="${VERSION:-1.0.0}"
+VERSION="${VERSION#v}"
 
 BUILD_ROOT="${ROOT}/build"
 STAGE="${BUILD_ROOT}/dmg-stage"
