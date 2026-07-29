@@ -71,6 +71,7 @@ build_with_swiftc() {
     QuickNotch/Notch/NotchPanelController.swift
     QuickNotch/Notch/NotchViews.swift
     QuickNotch/Settings/SettingsView.swift
+    QuickNotch/Settings/SettingsWindowController.swift
     QuickNotch/Services/SettingsStore.swift
     QuickNotch/Services/NoteWriter.swift
     QuickNotch/Services/GlobalHotKey.swift

@@ -6,11 +6,8 @@ struct QuickNotchApp: App {
     @StateObject private var appState = AppState.shared
 
     var body: some Scene {
-        Settings {
-            SettingsView()
-                .environmentObject(appState)
-        }
-
+        // Settings are opened via SettingsWindowController (AppKit) — SwiftUI's
+        // Settings scene does not open reliably from MenuBarExtra for LSUIElement apps.
         MenuBarExtra("Quick Notch", systemImage: "menubar.rectangle") {
             Button("Capture Note") {
                 appState.showCapture()
